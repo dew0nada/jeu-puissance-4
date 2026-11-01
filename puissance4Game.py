@@ -1,21 +1,42 @@
 import tkinter as tk
 
-grid = [[0] * 7 for _ in range(6)]
+ROWS, COLS = 6, 7
+
+grid = [[0] * COLS for _ in range(ROWS)]
 win = False
 player = 1
 
+def verify_last_ligne(col):
+    return 0 <= col < COLS and grid[0][col] == 0
 
-#fighting the urge to write code w nethna but 3ndi binome
-def checkLign():
-    return False
+def check_win():
+    
+    for r in range(ROWS):
+        for c in range(COLS - 3):
+            if all(grid[r][c + i] == player for i in range(4)):
+                return True
 
-def checkWin():
+    for c in range(COLS):
+        for r in range(ROWS - 3):
+            if all(grid[r + i][c] == player for i in range(4)):
+                return True
+
+    for r in range(ROWS - 3):
+        for c in range(COLS - 3):
+            if all(grid[r + i][c + i] == player for i in range(4)):
+                return True
+
+    for r in range(3, ROWS):
+        for c in range(COLS - 3):
+            if all(grid[r - i][c + i] == player for i in range(4)):
+                return True
+
     return False
 
 def buildV():
     canvas.delete("all")
-    for i in range(6):
-        for j in range(7):
+    for i in range(ROWS):
+        for j in range(COLS):
             x0 = j * (50 + 10) + 10
             y0 = i* (50 + 10) + 10
             x1 = x0 + 50
@@ -28,31 +49,35 @@ def buildV():
                 color = "#E6F2EF"
             canvas.create_oval(x0, y0, x1, y1, fill= color, outline= "#38618C")
 
-def clicked(event):
+def addBlock(event):
     global win, player
     i = (event.y - 10) // 60
     j = (event.x - 10) // 60
 
-    if i != 0 or not(0 <= j < 7):
+    if i != 0 or not(0 <= j < COLS):
         return
-    elif win == True or checkLign():
+    elif win == True or not verify_last_ligne(j):
+        #this is a check to avoid playing after game is done
         return
-    
-    for t in range(6):
+
+    #check for correct line (gravity rule)
+    for t in range(ROWS):
         if grid[5-t][j]== 0:
             grid[5-t][j] = player
             buildV()
             break
     
-    if checkWin():
+    if check_win():
         win = True
-        print("player" + player + " won!!")
-    elif checkLign():
+        curPlayer.config(text= "player" + str(player) + " won!!")
+    elif not verify_last_ligne(j):
         curPlayer.config(text= "DRAW!")
-    else:
+    else: #if game didnt end change player (+ gui)
         player = 3 - player
+        curPlayer.config(text= "player" + str(player) + " plays")
 
 
+#---------------- gui part
 root = tk.Tk()
 root.title("jeu Puissance 4 (human VS human)")
 root.geometry("900x400")
@@ -65,7 +90,7 @@ title = tk.Label(root,
 title.place(x= 450, y= 20)
 
 curPlayer = tk.Label(root,
-                 text= "current player :",
+                 text= "player" + str(player) + " plays",
                  fg="#151640", bg="#3F6D9E",
                  font=("Papyrus", 20, "bold"))
 curPlayer.place(x= 450, y= 150)
@@ -81,7 +106,7 @@ canvas = tk.Canvas(root,
                    bg="#3F6D9E",
                    highlightthickness=5, highlightbackground="#38618C")
 canvas.pack(side= "left")
-canvas.bind("<Button-1>", clicked)
+canvas.bind("<Button-1>", addBlock)
 
 buildV()
 root.mainloop()
