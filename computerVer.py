@@ -1,16 +1,30 @@
 import tkinter as tk
 import math
-import random
 
 ROWS, COLS = 6, 7
 DEPTH = 6
-grid = [[0] * COLS for _ in range(ROWS)]
+EMPTY, HUM, CPU = 0, 1, 2
+
+W3, W2 = 5, 2          
+W_CENTER = 3
+THREAT_GOOD = 50       
+THREAT_BAD = 10 
+
+WINDOWS = []
+for _r in range(ROWS):
+    for _c in range(COLS):
+        for _dr, _dc in ((0, 1), (1, 0), (1, 1), (1, -1)):
+            _er, _ec = _r + 3 * _dr, _c + 3 * _dc
+            if 0 <= _er < ROWS and 0 <= _ec < COLS:
+                WINDOWS.append(tuple((_r + i * _dr, _c + i * _dc) for i in range(4)))
+
+grid = [[EMPTY] * COLS for _ in range(ROWS)]
 win = False
-player = 1
+player = HUM
 
 def check_full_board():
     for i in range(COLS):
-        if grid[0][i] == 0:
+        if grid[0][i] == EMPTY:
             return False
     return True
 
@@ -41,31 +55,81 @@ def check_win(player):
 def checkPossibleCols(grid):
     possibilities = []
     for i in range(COLS):
-        if grid[0][i] == 0:
+        if grid[0][i] == EMPTY:
             possibilities.append(i)
-    possibilities.sort(key=lambda x: abs(x - 4))
+    possibilities.sort(key=lambda x: abs(x - 3))
     return possibilities
 
 def addBlock(col, player):
     global grid
     for t in range(ROWS):
-        if grid[5-t][col]== 0:
+        if grid[5-t][col]== EMPTY:
             grid[5-t][col] = player
             return 5-t
 
 def scale(): #binome
-    return int(random.randint(0, 10000000))
+    s = eval_B()
+    threats_cpu, threats_hum = set(), set()
+    for w in WINDOWS:
+        cpu = hum = 0
+        empty = None
+        for r, c in w:
+            v = grid[r][c]
+            if v == CPU:
+                cpu += 1
+            elif v == HUM:
+                hum += 1
+            else:
+                empty = (r, c)
+        if cpu == 3 and hum == 0:
+            threats_cpu.add(empty)
+        elif hum == 3 and cpu == 0:
+            threats_hum.add(empty)
+    for r, c in threats_cpu:
+        if r > 0 and grid[r - 1][c] == EMPTY:
+            s += THREAT_GOOD if (r + 1) % 2 == 0 else THREAT_BAD
+    for r, c in threats_hum:
+        if r > 0 and grid[r - 1][c] == EMPTY:
+            s -= THREAT_GOOD if (r + 1) % 2 == 1 else THREAT_BAD
+    return s
+
+def eval_B():
+    s = 0
+    for w in WINDOWS:
+        cpu = hum = 0
+        for r, c in w:
+            v = grid[r][c]
+            if v == CPU:
+                cpu += 1
+            elif v == HUM:
+                hum += 1
+        if hum == 0:                
+            if cpu == 3:
+                s += W3
+            elif cpu == 2:
+                s += W2
+        elif cpu == 0:               
+            if hum == 3:
+                s -= W3
+            elif hum == 2:
+                s -= W2
+    for r in range(ROWS):             
+        if grid[r][3] == CPU:
+            s += W_CENTER
+        elif grid[r][3] == HUM:
+            s -= W_CENTER
+    return s
 
 def removeBlock(col, row):
     global grid
-    grid[row][col] = 0
+    grid[row][col] = EMPTY
     return
 
 def min_max(depth, alpha, beta, maxORmin):
 
-    if check_win(2):
+    if check_win(CPU):
         return 10000000 - DEPTH + depth
-    elif check_win(1):
+    elif check_win(HUM):
         return -10000000 + DEPTH - depth
     elif check_full_board():
         return 0
@@ -78,7 +142,7 @@ def min_max(depth, alpha, beta, maxORmin):
         best = math.inf
 
     for possibility in checkPossibleCols(grid):
-        line = addBlock(possibility, 2)
+        line = addBlock(possibility, CPU)
         score = min_max(depth - 1, alpha, beta, 3-maxORmin)
         removeBlock(possibility, line)
         if maxORmin == 1: #max
@@ -105,7 +169,7 @@ def findMove():
     alpha, beta = -math.inf, math.inf
 
     for possibility in checkPossibleCols(grid):
-        line = addBlock(possibility, 2)
+        line = addBlock(possibility, CPU)
         score = min_max(DEPTH - 1, alpha, beta, 1)
         removeBlock(possibility, line)
         if final_score < score:
@@ -114,20 +178,21 @@ def findMove():
         if final_score > alpha:
             alpha = final_score
 
-    addBlock(final_col, 2)
-    betweenTurn(2)
+    addBlock(final_col, CPU)
+    betweenTurn(CPU)
 
 def addBlockHuman(event):
+    computerStart.place_forget()
     i = (event.y - 10) // 60
     j = (event.x - 10) // 60
 
     if i != 0 or not(0 <= j < COLS):
         return
-    elif win == True or not(grid[0][j] == 0) or player == 2:
+    elif win == True or not(grid[0][j] == 0) or player == CPU:
         return
 
-    addBlock(j, 1)
-    betweenTurn(1)
+    addBlock(j, HUM)
+    betweenTurn(HUM)
     
 def betweenTurn(playerC):
     global player, win
@@ -136,7 +201,7 @@ def betweenTurn(playerC):
 
     if check_win(player):
         win = True
-        if player == 1:
+        if player == HUM:
             curPlayer.config(text= "you won!!")
         else:
             curPlayer.config(text= "computer won!!")
@@ -144,7 +209,7 @@ def betweenTurn(playerC):
         curPlayer.config(text= "DRAW!")
     else:
         player = 3 - playerC
-        if player == 2:
+        if player == CPU:
             curPlayer.config(text= "computer turn")
             root.after(200,findMove)
         else:
@@ -154,16 +219,16 @@ def restart():
     global win, player
     for r in range(ROWS):
         for c in range(COLS):
-            grid[r][c] = 0
+            grid[r][c] = EMPTY
     win = False
-    player = 1
+    player = HUM
     curPlayer.config(text= "you start")
     buildV()
     computerStart.place(x=450, y=250)
 
 def letComputerStart():
     global player
-    player = 2
+    player = CPU
     curPlayer.config(text= "computer start")
     root.after(200,findMove)
     computerStart.place_forget()
