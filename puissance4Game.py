@@ -1,13 +1,17 @@
 import tkinter as tk
 
 ROWS, COLS = 6, 7
-
 grid = [[0] * COLS for _ in range(ROWS)]
 win = False
 player = 1
 
-def verify_last_ligne(col):
-    return 0 <= col < COLS and grid[0][col] == 0
+
+def verify_last_ligne():
+    for i in range(COLS):
+        if grid[0][i] == 0:
+            return True
+    return False
+
 
 def check_win():
     
@@ -56,11 +60,9 @@ def addBlock(event):
 
     if i != 0 or not(0 <= j < COLS):
         return
-    elif win == True or not verify_last_ligne(j):
-        #this is a check to avoid playing after game is done
+    elif win == True or not(grid[0][j] == 0):
         return
 
-    #check for correct line (gravity rule)
     for t in range(ROWS):
         if grid[5-t][j]== 0:
             grid[5-t][j] = player
@@ -70,11 +72,24 @@ def addBlock(event):
     if check_win():
         win = True
         curPlayer.config(text= "player" + str(player) + " won!!")
-    elif not verify_last_ligne(j):
+    elif not verify_last_ligne():
         curPlayer.config(text= "DRAW!")
-    else: #if game didnt end change player (+ gui)
+    else:
         player = 3 - player
         curPlayer.config(text= "player" + str(player) + " plays")
+
+
+
+def restart():
+    global win, player
+    for r in range(ROWS):
+        for c in range(COLS):
+            grid[r][c] = 0
+    win = False
+    player = 1
+    curPlayer.config(text= "player" + str(player) + " plays")
+    buildV()
+
 
 
 #---------------- gui part
@@ -100,6 +115,13 @@ status = tk.Label(root,
                  fg="#3F6D9E", bg="#151640",
                  font=("Papyrus", 40, "bold"))
 status.place(x= 450, y= 250)
+
+restartBtn = tk.Button(root,
+                 text= "Rejouer",
+                 fg="#151640", bg="#F783B0",
+                 font=("Papyrus", 16, "bold"),
+                 command= restart)
+restartBtn.place(x= 450, y= 320)
 
 canvas = tk.Canvas(root,
                    width=430, height=370,
