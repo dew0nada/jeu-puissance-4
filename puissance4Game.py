@@ -110,12 +110,6 @@ curPlayer = tk.Label(root,
                  font=("Papyrus", 20, "bold"))
 curPlayer.place(x= 450, y= 150)
 
-status = tk.Label(root,
-                 text= " ",
-                 fg="#3F6D9E", bg="#151640",
-                 font=("Papyrus", 40, "bold"))
-status.place(x= 450, y= 250)
-
 restartBtn = tk.Button(root,
                  text= "Rejouer",
                  fg="#151640", bg="#F783B0",

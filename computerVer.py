@@ -62,7 +62,7 @@ def removeBlock(col, row):
     return
 
 def min_max(depth, alpha, beta, maxORmin):
-    score = 0
+
     if check_win(2):
         return 10000000 - DEPTH + depth
     elif check_win(1):
@@ -96,6 +96,9 @@ def min_max(depth, alpha, beta, maxORmin):
     return best
 
 
+
+#------------ gameplay fct
+
 def findMove():
     final_score = -math.inf
     final_col = None
@@ -114,12 +117,60 @@ def findMove():
     addBlock(final_col, 2)
     betweenTurn(2)
 
+def addBlockHuman(event):
+    i = (event.y - 10) // 60
+    j = (event.x - 10) // 60
+
+    if i != 0 or not(0 <= j < COLS):
+        return
+    elif win == True or not(grid[0][j] == 0) or player == 2:
+        return
+
+    addBlock(j, 1)
+    betweenTurn(1)
+    
+def betweenTurn(playerC):
+    global player, win
+
+    buildV()
+
+    if check_win(player):
+        win = True
+        if player == 1:
+            curPlayer.config(text= "you won!!")
+        else:
+            curPlayer.config(text= "computer won!!")
+    elif check_full_board():
+        curPlayer.config(text= "DRAW!")
+    else:
+        player = 3 - playerC
+        if player == 2:
+            curPlayer.config(text= "computer turn")
+            root.after(200,findMove)
+        else:
+            curPlayer.config(text= "your turn")
+
+def restart():
+    global win, player
+    for r in range(ROWS):
+        for c in range(COLS):
+            grid[r][c] = 0
+    win = False
+    player = 1
+    curPlayer.config(text= "you start")
+    buildV()
+    computerStart.place(x=450, y=250)
+
+def letComputerStart():
+    global player
+    player = 2
+    curPlayer.config(text= "computer start")
+    root.after(200,findMove)
+    computerStart.place_forget()
 
 
 
-
-
-#------------gui fct-------------------
+#---------------- GUI
 
 def buildV():
     canvas.delete("all")
@@ -137,72 +188,30 @@ def buildV():
                 color = "#E6F2EF"
             canvas.create_oval(x0, y0, x1, y1, fill= color, outline= "#38618C")
 
-def addBlockHuman(event):
-    i = (event.y - 10) // 60
-    j = (event.x - 10) // 60
-
-    if i != 0 or not(0 <= j < COLS):
-        return
-    elif win == True or not(grid[0][j] == 0) or player == 2:
-        return
-
-    addBlock(j, 1)
-    betweenTurn(1)
-    
-
-def betweenTurn(playerC):
-    global player, win
-
-    buildV()
-
-    if check_win(player):
-        win = True
-        curPlayer.config(text= "player" + str(player) + " won!!")
-    elif check_full_board():
-        curPlayer.config(text= "DRAW!")
-    else:
-        player = 3 - playerC
-        if player == 2:
-            curPlayer.config(text= "computer turn")
-            findMove()
-        else:
-            curPlayer.config(text= "ur turn")
-
-
-
-def restart():
-    global win, player
-    for r in range(ROWS):
-        for c in range(COLS):
-            grid[r][c] = 0
-    win = False
-    player = 1
-    curPlayer.config(text= "restart text")
-    buildV()
-
-#---------------- gui part
 root = tk.Tk()
-root.title("jeu Puissance 4 (human VS human)")
+root.title("jeu Puissance 4 (human VS computer)")
 root.geometry("900x400")
 root.configure(bg="#151640")
 
 title = tk.Label(root,
-                 text="jeu Puissance 4\n(human VS human)",
+                 text="jeu Puissance 4\n(human VS computer)",
                  fg="#151640", bg="#3F6D9E",
                  font=("Papyrus", 20, "bold"))
 title.place(x= 450, y= 20)
 
 curPlayer = tk.Label(root,
-                 text= "player" + str(player) + " plays",
+                 text= "you start",
                  fg="#151640", bg="#3F6D9E",
                  font=("Papyrus", 20, "bold"))
 curPlayer.place(x= 450, y= 150)
 
-status = tk.Label(root,
-                 text= " ",
-                 fg="#3F6D9E", bg="#151640",
-                 font=("Papyrus", 40, "bold"))
-status.place(x= 450, y= 250)
+computerStart = tk.Button(root,
+                 text= "Let computer start",
+                 fg="#151640", bg="#E6F2EF",
+                 font=("Papyrus", 16, "bold"),
+                 command= letComputerStart)
+computerStart.place(x= 450, y= 250)
+
 
 restartBtn = tk.Button(root,
                  text= "Rejouer",
